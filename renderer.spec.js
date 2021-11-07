@@ -9,8 +9,11 @@ const createStyle = (style) => {
 const createElement = (tagOrComponent, props, ...children) => {
 
   const _render = (dispatcher) => {
+    let ret = tagOrComponent(props);
     dispatcher.currentStateCount = 0;
-    dispatcher.$elemRef.current.replaceWith(tagOrComponent(props));
+    // TODO: implement virtual dom
+    dispatcher.$elemRef.current?.replaceWith(ret);
+    return ret;
   };
 
   let $elemRef = { };
@@ -26,7 +29,7 @@ const createElement = (tagOrComponent, props, ...children) => {
     };
 
     DO_NOT_MODIFY_THIS_VALUE_OR_YOU_WILL_BE_FIRED.currentDispatcher = currentDispatcher;
-    $elem = tagOrComponent(props);
+    $elem = _render(currentDispatcher);
     $elemRef.current = $elem;
   }
 
@@ -39,8 +42,8 @@ const createElement = (tagOrComponent, props, ...children) => {
     }
   }
 
-  if (children) {
-    $elem.append(children);
+  for (const child of children) {
+    $elem.append(child);
   }
 
   return $elem;
@@ -100,7 +103,7 @@ describe('react renderer', () => {
   });
 
   it ('should render html element which child is html element', () => {
-    const children = `<div>i'm child</div>`; // TODO: replace with variable
+    const children = `<div>i'm child</div>`;
     const html = React.createElement('div',
       {},
       React.createElement('div', {}, `i'm child`)
@@ -126,14 +129,23 @@ describe('react renderer', () => {
 
       setState(1);
 
-      return React.createElement('div', {}, state);
+      return React.createElement('div', {
+        style: {
+          opacity: state,
+        },
+      }, state);
     }
 
     const html = React.createElement('div', {},
       React.createElement(MyComponent, {}));
 
     setTimeout(() => {
-      expect(html.outerHTML).toEqual(React.createElement('div', {}, React.createElement('div', {}, '1')).outerHTML);
+      expect(html.outerHTML).toEqual(React.createElement('div', { },
+        React.createElement('div', {
+          style: {
+            opacity: 1
+          },
+        }, '1')).outerHTML);
       done();
     });
   });
